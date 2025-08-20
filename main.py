@@ -3,13 +3,55 @@ import tkinter as tk
 import produtos_ui
 import vendas_ui
 import db
+import login_ui
+import usuarios_ui
+# ================= Inicialização do banco =================
+db.criar_tabelas()
+db.criar_tabela_usuarios()  # garante que a tabela de usuários exista
 
-db.criar_tabelas()  # garante que o banco e tabelas existam
+# Usuários de teste
+db.adicionar_usuario("admin", "1234", "admin")
+db.adicionar_usuario("funcionario", "1234", "funcionario")
 
+
+# ================= Função para abrir o sistema =================
+def abrir_sistema(tipo_usuario):
+    root_frame = tk.Toplevel()
+    root_frame.title("PDV Inteligente")
+
+    if tipo_usuario == "admin":
+        # Administrador pode gerenciar produtos e usuários
+        tk.Button(root_frame, text="Gerenciar Produtos", width=30, command=produtos_ui.abrir_janela_produtos).pack(pady=10)
+        tk.Button(root_frame, text="Gerenciar Usuários", width=30, command=usuarios_ui.abrir_janela_usuarios).pack(pady=10)
+
+    # Todos os usuários (funcionários ou admins) podem abrir o PDV
+    tk.Button(root_frame, text="Abrir PDV (Vendas)", width=30, command=vendas_ui.abrir_janela_vendas).pack(pady=10)
+
+    # Fechar tudo corretamente quando fechar a janela do sistema
+    def fechar_janela():
+        db.fechar_conexao()
+        root_frame.destroy()
+        root.destroy()  # garante que o loop principal encerre
+
+    root_frame.protocol("WM_DELETE_WINDOW", fechar_janela)
+
+    if tipo_usuario == "admin":
+        tk.Button(root_frame, text="Gerenciar Produtos", width=30, 
+                  command=produtos_ui.abrir_janela_produtos).pack(pady=10)
+
+    tk.Button(root_frame, text="Abrir PDV (Vendas)", width=30, 
+              command=vendas_ui.abrir_janela_vendas).pack(pady=10)
+
+# ================= Janela de login =================
 root = tk.Tk()
-root.title("PDV Inteligente")
+root.withdraw()  
 
-tk.Button(root, text="Gerenciar Produtos", width=30, command=produtos_ui.abrir_janela_produtos).pack(pady=10)
-tk.Button(root, text="Abrir PDV (Vendas)", width=30, command=vendas_ui.abrir_janela_vendas).pack(pady=10)
 
+def sair_app():
+    db.fechar_conexao()
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", sair_app)
+
+login_ui.abrir_login(root, abrir_sistema)
 root.mainloop()

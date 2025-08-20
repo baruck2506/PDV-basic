@@ -1,0 +1,591 @@
+[1mdiff --git a/__pycache__/db.cpython-313.pyc b/__pycache__/db.cpython-313.pyc[m
+[1mnew file mode 100644[m
+[1mindex 0000000..40bacd7[m
+Binary files /dev/null and b/__pycache__/db.cpython-313.pyc differ
+[1mdiff --git a/__pycache__/produtos_ui.cpython-313.pyc b/__pycache__/produtos_ui.cpython-313.pyc[m
+[1mnew file mode 100644[m
+[1mindex 0000000..3cc6278[m
+Binary files /dev/null and b/__pycache__/produtos_ui.cpython-313.pyc differ
+[1mdiff --git a/__pycache__/vendas_ui.cpython-313.pyc b/__pycache__/vendas_ui.cpython-313.pyc[m
+[1mnew file mode 100644[m
+[1mindex 0000000..f9384bd[m
+Binary files /dev/null and b/__pycache__/vendas_ui.cpython-313.pyc differ
+[1mdiff --git a/db.py b/db.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b08c722[m
+[1m--- /dev/null[m
+[1m+++ b/db.py[m
+[36m@@ -0,0 +1,85 @@[m
+[32m+[m[32m# db.py[m
+[32m+[m[32mimport sqlite3[m
+[32m+[m[32mfrom datetime import datetime[m
+[32m+[m
+[32m+[m[32m# Conexão com o banco[m
+[32m+[m[32mconn = sqlite3.connect("pdv.db")[m
+[32m+[m[32mcursor = conn.cursor()[m
+[32m+[m
+[32m+[m[32m# ================= Criação das tabelas =================[m
+[32m+[m[32mdef criar_tabelas():[m
+[32m+[m[32m    cursor.execute("""[m
+[32m+[m[32m    CREATE TABLE IF NOT EXISTS produtos ([m
+[32m+[m[32m        id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[32m+[m[32m        nome TEXT UNIQUE,[m
+[32m+[m[32m        preco REAL,[m
+[32m+[m[32m        estoque INTEGER[m
+[32m+[m[32m    )[m
+[32m+[m[32m    """)[m
+[32m+[m[32m    cursor.execute("""[m
+[32m+[m[32m    CREATE TABLE IF NOT EXISTS vendas ([m
+[32m+[m[32m        id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[32m+[m[32m        total REAL,[m
+[32m+[m[32m        data TEXT[m
+[32m+[m[32m    )[m
+[32m+[m[32m    """)[m
+[32m+[m[32m    cursor.execute("""[m
+[32m+[m[32m    CREATE TABLE IF NOT EXISTS itens_venda ([m
+[32m+[m[32m        id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[32m+[m[32m        venda_id INTEGER,[m
+[32m+[m[32m        produto_id INTEGER,[m
+[32m+[m[32m        quantidade INTEGER,[m
+[32m+[m[32m        FOREIGN KEY(venda_id) REFERENCES vendas(id),[m
+[32m+[m[32m        FOREIGN KEY(produto_id) REFERENCES produtos(id)[m
+[32m+[m[32m    )[m
+[32m+[m[32m    """)[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m
+[32m+[m[32m# ================= Funções de Produtos =================[m
+[32m+[m[32mdef adicionar_produto(nome, preco, estoque):[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        cursor.execute("INSERT INTO produtos (nome, preco, estoque) VALUES (?, ?, ?)", (nome, preco, estoque))[m
+[32m+[m[32m        conn.commit()[m
+[32m+[m[32m        return True[m
+[32m+[m[32m    except sqlite3.IntegrityError:[m
+[32m+[m[32m        return False[m
+[32m+[m
+[32m+[m[32mdef remover_produto(nome):[m
+[32m+[m[32m    cursor.execute("DELETE FROM produtos WHERE nome=?", (nome,))[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m
+[32m+[m[32mdef alterar_produto(nome_atual, novo_nome, novo_preco, novo_estoque):[m
+[32m+[m[32m    cursor.execute("""[m
+[32m+[m[32m        UPDATE produtos[m
+[32m+[m[32m        SET nome=?, preco=?, estoque=?[m
+[32m+[m[32m        WHERE nome=?[m
+[32m+[m[32m    """, (novo_nome, novo_preco, novo_estoque, nome_atual))[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m
+[32m+[m[32mdef listar_produtos():[m
+[32m+[m[32m    cursor.execute("SELECT id, nome, preco, estoque FROM produtos")[m
+[32m+[m[32m    return cursor.fetchall()  # Lista de tuplas (id, nome, preco, estoque)[m
+[32m+[m
+[32m+[m[32m# ================= Funções de Vendas =================[m
+[32m+[m[32mdef salvar_venda(carrinho):[m
+[32m+[m[32m    total_venda = 0[m
+[32m+[m[32m    for nome, qtd in carrinho.items():[m
+[32m+[m[32m        cursor.execute("SELECT id, preco FROM produtos WHERE nome=?", (nome,))[m
+[32m+[m[32m        produto_id, preco = cursor.fetchone()[m
+[32m+[m[32m        total_venda += preco * qtd[m
+[32m+[m
+[32m+[m[32m    data_atual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")[m
+[32m+[m[32m    cursor.execute("INSERT INTO vendas (total, data) VALUES (?, ?)", (total_venda, data_atual))[m
+[32m+[m[32m    venda_id = cursor.lastrowid[m
+[32m+[m
+[32m+[m[32m    for nome, qtd in carrinho.items():[m
+[32m+[m[32m        cursor.execute("SELECT id FROM produtos WHERE nome=?", (nome,))[m
+[32m+[m[32m        produto_id = cursor.fetchone()[0][m
+[32m+[m[32m        cursor.execute("INSERT INTO itens_venda (venda_id, produto_id, quantidade) VALUES (?, ?, ?)",[m
+[32m+[m[32m                       (venda_id, produto_id, qtd))[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m
+[32m+[m[32m# ================= Funções de Estoque =================[m
+[32m+[m[32mdef atualizar_estoque(nome, nova_quantidade):[m
+[32m+[m[32m    cursor.execute("UPDATE produtos SET estoque=? WHERE nome=?", (nova_quantidade, nome))[m
+[32m+[m[32m    conn.commit()[m
+[1mdiff --git a/main.py b/main.py[m
+[1mindex 79bc3d4..404e742 100644[m
+[1m--- a/main.py[m
+[1m+++ b/main.py[m
+[36m@@ -1,273 +1,15 @@[m
+[32m+[m[32m# main.py[m
+ import tkinter as tk[m
+[31m-from tkinter import messagebox, simpledialog[m
+[31m-import sqlite3[m
+[31m-from datetime import datetime[m
+[32m+[m[32mimport produtos_ui[m
+[32m+[m[32mimport vendas_ui[m
+[32m+[m[32mimport db[m
+ [m
+[31m-# ================= Banco de Dados =================[m
+[31m-conn = sqlite3.connect("pdv.db")[m
+[31m-cursor = conn.cursor()[m
+[32m+[m[32mdb.criar_tabelas()  # garante que o banco e tabelas existam[m
+ [m
+[31m-# Criar tabelas[m
+[31m-cursor.execute("""[m
+[31m-CREATE TABLE IF NOT EXISTS produtos ([m
+[31m-    id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[31m-    nome TEXT UNIQUE,[m
+[31m-    preco REAL,[m
+[31m-    estoque INTEGER[m
+[31m-)[m
+[31m-""")[m
+[31m-[m
+[31m-cursor.execute("""[m
+[31m-CREATE TABLE IF NOT EXISTS vendas ([m
+[31m-    id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[31m-    total REAL,[m
+[31m-    data TEXT[m
+[31m-)[m
+[31m-""")[m
+[31m-[m
+[31m-cursor.execute("""[m
+[31m-CREATE TABLE IF NOT EXISTS itens_venda ([m
+[31m-    id INTEGER PRIMARY KEY AUTOINCREMENT,[m
+[31m-    venda_id INTEGER,[m
+[31m-    produto_id INTEGER,[m
+[31m-    quantidade INTEGER,[m
+[31m-    FOREIGN KEY(venda_id) REFERENCES vendas(id),[m
+[31m-    FOREIGN KEY(produto_id) REFERENCES produtos(id)[m
+[31m-)[m
+[31m-""")[m
+[31m-conn.commit()[m
+[31m-[m
+[31m-carrinho = {}[m
+[31m-[m
+[31m-# ================= Funções de Produtos =================[m
+[31m-def adicionar_produto_db(nome, preco, estoque):[m
+[31m-    try:[m
+[31m-        cursor.execute("INSERT INTO produtos (nome, preco, estoque) VALUES (?, ?, ?)", (nome, preco, estoque))[m
+[31m-        conn.commit()[m
+[31m-        return True[m
+[31m-    except sqlite3.IntegrityError:[m
+[31m-        messagebox.showerror("Erro", "Produto já cadastrado!")[m
+[31m-        return False[m
+[31m-[m
+[31m-def remover_produto_db(nome):[m
+[31m-    cursor.execute("DELETE FROM produtos WHERE nome=?", (nome,))[m
+[31m-    conn.commit()[m
+[31m-[m
+[31m-def alterar_produto_db(nome_atual, novo_nome, novo_preco, novo_estoque):[m
+[31m-    cursor.execute("""[m
+[31m-        UPDATE produtos[m
+[31m-        SET nome=?, preco=?, estoque=?[m
+[31m-        WHERE nome=?[m
+[31m-    """, (novo_nome, novo_preco, novo_estoque, nome_atual))[m
+[31m-    conn.commit()[m
+[31m-[m
+[31m-def listar_produtos_db():[m
+[31m-    cursor.execute("SELECT id, nome, preco, estoque FROM produtos")[m
+[31m-    return cursor.fetchall()  # Lista de tuplas (id, nome, preco, estoque)[m
+[31m-[m
+[31m-# ================= Janela de Produtos =================[m
+[31m-def abrir_janela_produtos():[m
+[31m-    janela_produtos = tk.Toplevel()[m
+[31m-    janela_produtos.title("Cadastro de Produtos")[m
+[31m-[m
+[31m-    tk.Label(janela_produtos, text="Nome do Produto").pack()[m
+[31m-    entry_nome = tk.Entry(janela_produtos)[m
+[31m-    entry_nome.pack()[m
+[31m-[m
+[31m-    tk.Label(janela_produtos, text="Preço").pack()[m
+[31m-    entry_preco = tk.Entry(janela_produtos)[m
+[31m-    entry_preco.pack()[m
+[31m-[m
+[31m-    tk.Label(janela_produtos, text="Estoque").pack()[m
+[31m-    entry_estoque = tk.Entry(janela_produtos)[m
+[31m-    entry_estoque.pack()[m
+[31m-[m
+[31m-    list_produtos = tk.Listbox(janela_produtos, width=50)[m
+[31m-    list_produtos.pack(pady=5)[m
+[31m-[m
+[31m-    def atualizar_lista_produtos():[m
+[31m-        list_produtos.delete(0, tk.END)[m
+[31m-        for _, nome, preco, estoque in listar_produtos_db():[m
+[31m-            list_produtos.insert(tk.END, f"{nome} - R$ {preco:.2f} - Estoque: {estoque}")[m
+[31m-[m
+[31m-    atualizar_lista_produtos()[m
+[31m-[m
+[31m-    def adicionar_produto():[m
+[31m-        nome = entry_nome.get()[m
+[31m-        preco = entry_preco.get()[m
+[31m-        estoque = entry_estoque.get()[m
+[31m-        if nome and preco and estoque:[m
+[31m-            try:[m
+[31m-                preco = float(preco)[m
+[31m-                estoque = int(estoque)[m
+[31m-                if preco < 0 or estoque < 0:[m
+[31m-                    raise ValueError[m
+[31m-                if adicionar_produto_db(nome, preco, estoque):[m
+[31m-                    atualizar_lista_produtos()[m
+[31m-                    entry_nome.delete(0, tk.END)[m
+[31m-                    entry_preco.delete(0, tk.END)[m
+[31m-                    entry_estoque.delete(0, tk.END)[m
+[31m-            except ValueError:[m
+[31m-                messagebox.showerror("Erro", "Preço ou estoque inválido!")[m
+[31m-        else:[m
+[31m-            messagebox.showerror("Erro", "Preencha todos os campos!")[m
+[31m-[m
+[31m-    def remover_produto():[m
+[31m-        selecao = list_produtos.curselection()[m
+[31m-        if not selecao:[m
+[31m-            messagebox.showerror("Erro", "Selecione um produto para remover!")[m
+[31m-            return[m
+[31m-        item = list_produtos.get(selecao[0])[m
+[31m-        nome = item.split(" - ")[0][m
+[31m-        confirmar = messagebox.askyesno("Confirmar", f"Deseja remover o produto '{nome}'?")[m
+[31m-        if confirmar:[m
+[31m-            remover_produto_db(nome)[m
+[31m-            atualizar_lista_produtos()[m
+[31m-[m
+[31m-    def alterar_produto():[m
+[31m-        selecao = list_produtos.curselection()[m
+[31m-        if not selecao:[m
+[31m-            messagebox.showerror("Erro", "Selecione um produto para alterar!")[m
+[31m-            return[m
+[31m-        item = list_produtos.get(selecao[0])[m
+[31m-        nome_atual = item.split(" - ")[0][m
+[31m-        cursor.execute("SELECT preco, estoque FROM produtos WHERE nome=?", (nome_atual,))[m
+[31m-        preco_atual, estoque_atual = cursor.fetchone()[m
+[31m-[m
+[31m-        novo_nome = simpledialog.askstring("Alterar Produto", "Novo nome:", initialvalue=nome_atual)[m
+[31m-        if not novo_nome:[m
+[31m-            return[m
+[31m-        try:[m
+[31m-            novo_preco = simpledialog.askfloat("Alterar Produto", "Novo preço:", initialvalue=preco_atual, minvalue=0)[m
+[31m-            if novo_preco is None:[m
+[31m-                return[m
+[31m-            novo_estoque = simpledialog.askinteger("Alterar Produto", "Novo estoque:", initialvalue=estoque_atual, minvalue=0)[m
+[31m-            if novo_estoque is None:[m
+[31m-                return[m
+[31m-        except ValueError:[m
+[31m-            messagebox.showerror("Erro", "Valores inválidos!")[m
+[31m-            return[m
+[31m-[m
+[31m-        alterar_produto_db(nome_atual, novo_nome, novo_preco, novo_estoque)[m
+[31m-        atualizar_lista_produtos()[m
+[31m-[m
+[31m-    tk.Button(janela_produtos, text="Adicionar Produto", command=adicionar_produto).pack(pady=5)[m
+[31m-    tk.Button(janela_produtos, text="Remover Produto", command=remover_produto).pack(pady=5)[m
+[31m-    tk.Button(janela_produtos, text="Alterar Produto", command=alterar_produto).pack(pady=5)[m
+[31m-[m
+[31m-# ================= Janela de Vendas =================[m
+[31m-def abrir_janela_vendas():[m
+[31m-    janela_vendas = tk.Toplevel()[m
+[31m-    janela_vendas.title("Vendas")[m
+[31m-[m
+[31m-    tk.Label(janela_vendas, text="Produtos Disponíveis").pack()[m
+[31m-    list_produtos_venda = tk.Listbox(janela_vendas, width=40)[m
+[31m-    list_produtos_venda.pack()[m
+[31m-[m
+[31m-    def atualizar_lista_produtos_venda():[m
+[31m-        list_produtos_venda.delete(0, tk.END)[m
+[31m-        for _, nome, preco, estoque in listar_produtos_db():[m
+[31m-            list_produtos_venda.insert(tk.END, f"{nome} - R$ {preco:.2f} - Estoque: {estoque}")[m
+[31m-[m
+[31m-    atualizar_lista_produtos_venda()[m
+[31m-[m
+[31m-    tk.Label(janela_vendas, text="Carrinho").pack()[m
+[31m-    list_carrinho_venda = tk.Listbox(janela_vendas, width=40)[m
+[31m-    list_carrinho_venda.pack()[m
+[31m-[m
+[31m-    label_total = tk.Label(janela_vendas, text="Total: R$ 0.00", font=("Arial", 14))[m
+[31m-    label_total.pack(pady=5)[m
+[31m-[m
+[31m-    # Funções do carrinho[m
+[31m-    def atualizar_carrinho():[m
+[31m-        list_carrinho_venda.delete(0, tk.END)[m
+[31m-        total = 0[m
+[31m-        for nome, qtd in carrinho.items():[m
+[31m-            cursor.execute("SELECT preco FROM produtos WHERE nome=?", (nome,))[m
+[31m-            preco = cursor.fetchone()[0][m
+[31m-            subtotal = preco * qtd[m
+[31m-            list_carrinho_venda.insert(tk.END, f"{nome} x{qtd} - R$ {subtotal:.2f}")[m
+[31m-            total += subtotal[m
+[31m-        label_total.config(text=f"Total: R$ {total:.2f}")[m
+[31m-[m
+[31m-    def adicionar_ao_carrinho():[m
+[31m-        selecao = list_produtos_venda.curselection()[m
+[31m-        if not selecao:[m
+[31m-            messagebox.showerror("Erro", "Selecione um produto!")[m
+[31m-            return[m
+[31m-        item = list_produtos_venda.get(selecao[0])[m
+[31m-        nome = item.split(" - ")[0][m
+[31m-[m
+[31m-        qtd = simpledialog.askinteger("Quantidade", f"Quantidade de {nome}:", minvalue=1)[m
+[31m-        if not qtd:[m
+[31m-            return[m
+[31m-[m
+[31m-        if nome in carrinho:[m
+[31m-            carrinho[nome] += qtd[m
+[31m-        else:[m
+[31m-            carrinho[nome] = qtd[m
+[31m-        atualizar_carrinho()[m
+[31m-[m
+[31m-    def remover_do_carrinho():[m
+[31m-        selecao = list_carrinho_venda.curselection()[m
+[31m-        if not selecao:[m
+[31m-            messagebox.showerror("Erro", "Selecione um item para remover!")[m
+[31m-            return[m
+[31m-        item = list_carrinho_venda.get(selecao[0])[m
+[31m-        nome = item.split(" x")[0][m
+[31m-[m
+[31m-        qtd_atual = carrinho[nome][m
+[31m-        if qtd_atual > 1:[m
+[31m-            diminuir = simpledialog.askinteger([m
+[31m-                "Remover Item",[m
+[31m-                f"Quantidade atual de {nome}: {qtd_atual}\nQuantos deseja remover?",[m
+[31m-                minvalue=1, maxvalue=qtd_atual[m
+[31m-            )[m
+[31m-            if diminuir:[m
+[31m-                carrinho[nome] -= diminuir[m
+[31m-                if carrinho[nome] <= 0:[m
+[31m-                    del carrinho[nome][m
+[31m-        else:[m
+[31m-            del carrinho[nome][m
+[31m-        atualizar_carrinho()[m
+[31m-[m
+[31m-    def finalizar_venda():[m
+[31m-        if not carrinho:[m
+[31m-            messagebox.showerror("Erro", "Carrinho vazio!")[m
+[31m-            return[m
+[31m-[m
+[31m-        total_venda = 0[m
+[31m-        for nome, qtd in carrinho.items():[m
+[31m-            cursor.execute("SELECT id, preco FROM produtos WHERE nome=?", (nome,))[m
+[31m-            produto_id, preco = cursor.fetchone()[m
+[31m-            subtotal = preco * qtd[m
+[31m-            total_venda += subtotal[m
+[31m-[m
+[31m-        # Salvar venda[m
+[31m-        data_atual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")[m
+[31m-        cursor.execute("INSERT INTO vendas (total, data) VALUES (?, ?)", (total_venda, data_atual))[m
+[31m-        venda_id = cursor.lastrowid[m
+[31m-[m
+[31m-        for nome, qtd in carrinho.items():[m
+[31m-            cursor.execute("SELECT id FROM produtos WHERE nome=?", (nome,))[m
+[31m-            produto_id = cursor.fetchone()[0][m
+[31m-            cursor.execute("INSERT INTO itens_venda (venda_id, produto_id, quantidade) VALUES (?, ?, ?)",[m
+[31m-                           (venda_id, produto_id, qtd))[m
+[31m-        conn.commit()[m
+[31m-        carrinho.clear()[m
+[31m-        atualizar_carrinho()[m
+[31m-        atualizar_lista_produtos_venda()[m
+[31m-        messagebox.showinfo("Sucesso", "Venda finalizada!")[m
+[31m-[m
+[31m-    tk.Button(janela_vendas, text="Adicionar ao Carrinho", command=adicionar_ao_carrinho).pack(pady=5)[m
+[31m-    tk.Button(janela_vendas, text="Remover do Carrinho", command=remover_do_carrinho).pack(pady=5)[m
+[31m-    tk.Button(janela_vendas, text="Finalizar Venda", command=finalizar_venda).pack(pady=5)[m
+[31m-[m
+[31m-# ================= Janela principal =================[m
+ root = tk.Tk()[m
+ root.title("PDV Inteligente")[m
+ [m
+[31m-tk.Button(root, text="Abrir Cadastro de Produtos", width=30, command=abrir_janela_produtos).pack(pady=10)[m
+[31m-tk.Button(root, text="Abrir Vendas", width=30, command=abrir_janela_vendas).pack(pady=10)[m
+[32m+[m[32mtk.Button(root, text="Gerenciar Produtos", width=30, command=produtos_ui.abrir_janela_produtos).pack(pady=10)[m
+[32m+[m[32mtk.Button(root, text="Abrir PDV (Vendas)", width=30, command=vendas_ui.abrir_janela_vendas).pack(pady=10)[m
+ [m
+ root.mainloop()[m
+[1mdiff --git a/pdv.db b/pdv.db[m
+[1mindex 069438d..81ed8f4 100644[m
+Binary files a/pdv.db and b/pdv.db differ
+[1mdiff --git a/produtos_ui.py b/produtos_ui.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0ecf234[m
+[1m--- /dev/null[m
+[1m+++ b/produtos_ui.py[m
+[36m@@ -0,0 +1,94 @@[m
+[32m+[m[32m# produtos_ui.py[m
+[32m+[m[32mimport tkinter as tk[m
+[32m+[m[32mfrom tkinter import messagebox, simpledialog[m
+[32m+[m[32mimport db[m
+[32m+[m
+[32m+[m[32mdef abrir_janela_produtos():[m
+[32m+[m[32m    janela_produtos = tk.Toplevel()[m
+[32m+[m[32m    janela_produtos.title("Cadastro de Produtos")[m
+[32m+[m
+[32m+[m[32m    tk.Label(janela_produtos, text="Nome do Produto").pack()[m
+[32m+[m[32m    entry_nome = tk.Entry(janela_produtos)[m
+[32m+[m[32m    entry_nome.pack()[m
+[32m+[m
+[32m+[m[32m    tk.Label(janela_produtos, text="Preço").pack()[m
+[32m+[m[32m    entry_preco = tk.Entry(janela_produtos)[m
+[32m+[m[32m    entry_preco.pack()[m
+[32m+[m
+[32m+[m[32m    tk.Label(janela_produtos, text="Estoque").pack()[m
+[32m+[m[32m    entry_estoque = tk.Entry(janela_produtos)[m
+[32m+[m[32m    entry_estoque.pack()[m
+[32m+[m
+[32m+[m[32m    list_produtos = tk.Listbox(janela_produtos, width=50)[m
+[32m+[m[32m    list_produtos.pack(pady=5)[m
+[32m+[m
+[32m+[m[32m    def atualizar_lista_produtos():[m
+[32m+[m[32m        list_produtos.delete(0, tk.END)[m
+[32m+[m[32m        for _, nome, preco, estoque in db.listar_produtos():[m
+[32m+[m[32m            list_produtos.insert(tk.END, f"{nome} - R$ {preco:.2f} - Estoque: {estoque}")[m
+[32m+[m
+[32m+[m[32m    atualizar_lista_produtos()[m
+[32m+[m
+[32m+[m[32m    def adicionar_produto():[m
+[32m+[m[32m        nome = entry_nome.get()[m
+[32m+[m[32m        preco = entry_preco.get()[m
+[32m+[m[32m        estoque = entry_estoque.get()[m
+[32m+[m[32m        if nome and preco and estoque:[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                preco = float(preco)[m
+[32m+[m[32m                estoque = int(estoque)[m
+[32m+[m[32m                if preco < 0 or estoque < 0:[m
+[32m+[m[32m                    raise ValueError[m
+[32m+[m[32m                if db.adicionar_produto(nome, preco, estoque):[m
+[32m+[m[32m                    atualizar_lista_produtos()[m
+[32m+[m[32m                    entry_nome.delete(0, tk.END)[m
+[32m+[m[32m                    entry_preco.delete(0, tk.END)[m
+[32m+[m[32m                    entry_estoque.delete(0, tk.END)[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    messagebox.showerror("Erro", "Produto já cadastrado!")[m
+[32m+[m[32m            except ValueError:[m
+[32m+[m[32m                messagebox.showerror("Erro", "Preço ou estoque inválido!")[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Preencha todos os campos!")[m
+[32m+[m
+[32m+[m[32m    def remover_produto():[m
+[32m+[m[32m        selecao = list_produtos.curselection()[m
+[32m+[m[32m        if not selecao:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Selecione um produto para remover!")[m
+[32m+[m[32m            return[m
+[32m+[m[32m        item = list_produtos.get(selecao[0])[m
+[32m+[m[32m        nome = item.split(" - ")[0][m
+[32m+[m[32m        confirmar = messagebox.askyesno("Confirmar", f"Deseja remover o produto '{nome}'?")[m
+[32m+[m[32m        if confirmar:[m
+[32m+[m[32m            db.remover_produto(nome)[m
+[32m+[m[32m            atualizar_lista_produtos()[m
+[32m+[m
+[32m+[m[32m    def alterar_produto():[m
+[32m+[m[32m        selecao = list_produtos.curselection()[m
+[32m+[m[32m        if not selecao:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Selecione um produto para alterar!")[m
+[32m+[m[32m            return[m
+[32m+[m[32m        item = list_produtos.get(selecao[0])[m
+[32m+[m[32m        nome_atual = item.split(" - ")[0][m
+[32m+[m[32m        _, _, preco_atual, estoque_atual = next(p for p in db.listar_produtos() if p[1] == nome_atual)[m
+[32m+[m
+[32m+[m[32m        novo_nome = simpledialog.askstring("Alterar Produto", "Novo nome:", initialvalue=nome_atual)[m
+[32m+[m[32m        if not novo_nome:[m
+[32m+[m[32m            return[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            novo_preco = simpledialog.askfloat("Alterar Produto", "Novo preço:", initialvalue=preco_atual, minvalue=0)[m
+[32m+[m[32m            if novo_preco is None:[m
+[32m+[m[32m                return[m
+[32m+[m[32m            novo_estoque = simpledialog.askinteger("Alterar Produto", "Novo estoque:", initialvalue=estoque_atual, minvalue=0)[m
+[32m+[m[32m            if novo_estoque is None:[m
+[32m+[m[32m                return[m
+[32m+[m[32m        except ValueError:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Valores inválidos!")[m
+[32m+[m[32m            return[m
+[32m+[m
+[32m+[m[32m        db.alterar_produto(nome_atual, novo_nome, novo_preco, novo_estoque)[m
+[32m+[m[32m        atualizar_lista_produtos()[m
+[32m+[m
+[32m+[m[32m    tk.Button(janela_produtos, text="Adicionar Produto", command=adicionar_produto).pack(pady=5)[m
+[32m+[m[32m    tk.Button(janela_produtos, text="Remover Produto", command=remover_produto).pack(pady=5)[m
+[32m+[m[32m    tk.Button(janela_produtos, text="Alterar Produto", command=alterar_produto).pack(pady=5)[m
+[1mdiff --git a/vendas_ui.py b/vendas_ui.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e115628[m
+[1m--- /dev/null[m
+[1m+++ b/vendas_ui.py[m
+[36m@@ -0,0 +1,94 @@[m
+[32m+[m[32m# vendas_ui.py[m
+[32m+[m[32mimport tkinter as tk[m
+[32m+[m[32mfrom tkinter import messagebox, simpledialog[m
+[32m+[m[32mimport db[m
+[32m+[m
+[32m+[m[32mcarrinho = {}[m
+[32m+[m
+[32m+[m[32mdef abrir_janela_vendas():[m
+[32m+[m[32m    janela_vendas = tk.Toplevel()[m
+[32m+[m[32m    janela_vendas.title("Vendas")[m
+[32m+[m
+[32m+[m[32m    tk.Label(janela_vendas, text="Produtos Disponíveis").pack()[m
+[32m+[m[32m    list_produtos_venda = tk.Listbox(janela_vendas, width=50)[m
+[32m+[m[32m    list_produtos_venda.pack()[m
+[32m+[m
+[32m+[m[32m    def atualizar_lista_produtos_venda():[m
+[32m+[m[32m        list_produtos_venda.delete(0, tk.END)[m
+[32m+[m[32m        for _, nome, preco, estoque in db.listar_produtos():[m
+[32m+[m[32m            list_produtos_venda.insert(tk.END, f"{nome} - R$ {preco:.2f} - Estoque: {estoque}")[m
+[32m+[m
+[32m+[m[32m    atualizar_lista_produtos_venda()[m
+[32m+[m
+[32m+[m[32m    tk.Label(janela_vendas, text="Carrinho").pack()[m
+[32m+[m[32m    list_carrinho_venda = tk.Listbox(janela_vendas, width=50)[m
+[32m+[m[32m    list_carrinho_venda.pack()[m
+[32m+[m
+[32m+[m[32m    label_total = tk.Label(janela_vendas, text="Total: R$ 0.00", font=("Arial", 14))[m
+[32m+[m[32m    label_total.pack(pady=5)[m
+[32m+[m
+[32m+[m[32m    def atualizar_carrinho():[m
+[32m+[m[32m        list_carrinho_venda.delete(0, tk.END)[m
+[32m+[m[32m        total = 0[m
+[32m+[m[32m        for nome, qtd in carrinho.items():[m
+[32m+[m[32m            produto = next(p for p in db.listar_produtos() if p[1] == nome)[m
+[32m+[m[32m            preco = produto[2][m
+[32m+[m[32m            subtotal = preco * qtd[m
+[32m+[m[32m            list_carrinho_venda.insert(tk.END, f"{nome} x{qtd} - R$ {subtotal:.2f}")[m
+[32m+[m[32m            total += subtotal[m
+[32m+[m[32m        label_total.config(text=f"Total: R$ {total:.2f}")[m
+[32m+[m
+[32m+[m[32m    def adicionar_ao_carrinho():[m
+[32m+[m[32m        selecao = list_produtos_venda.curselection()[m
+[32m+[m[32m        if not selecao:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Selecione um produto!")[m
+[32m+[m[32m            return[m
+[32m+[m[32m        item = list_produtos_venda.get(selecao[0])[m
+[32m+[m[32m        nome = item.split(" - ")[0][m
+[32m+[m
+[32m+[m[32m        qtd = simpledialog.askinteger("Quantidade", f"Quantidade de {nome}:", minvalue=1)[m
+[32m+[m[32m        if not qtd:[m
+[32m+[m[32m            return[m
+[32m+[m
+[32m+[m[32m        if nome in carrinho:[m
+[32m+[m[32m            carrinho[nome] += qtd[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            carrinho[nome] = qtd[m
+[32m+[m[32m        atualizar_carrinho()[m
+[32m+[m
+[32m+[m[32m    def remover_do_carrinho():[m
+[32m+[m[32m        selecao = list_carrinho_venda.curselection()[m
+[32m+[m[32m        if not selecao:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Selecione um item para remover!")[m
+[32m+[m[32m            return[m
+[32m+[m[32m        item = list_carrinho_venda.get(selecao[0])[m
+[32m+[m[32m        nome = item.split(" x")[0][m
+[32m+[m
+[32m+[m[32m        qtd_atual = carrinho[nome][m
+[32m+[m[32m        if qtd_atual > 1:[m
+[32m+[m[32m            diminuir = simpledialog.askinteger([m
+[32m+[m[32m                "Remover Item",[m
+[32m+[m[32m                f"Quantidade atual de {nome}: {qtd_atual}\nQuantos deseja remover?",[m
+[32m+[m[32m                minvalue=1, maxvalue=qtd_atual[m
+[32m+[m[32m            )[m
+[32m+[m[32m            if diminuir:[m
+[32m+[m[32m                carrinho[nome] -= diminuir[m
+[32m+[m[32m                if carrinho[nome] <= 0:[m
+[32m+[m[32m                    del carrinho[nome][m
+[32m+[m[32m        else:[m
+[32m+[m[32m            del carrinho[nome][m
+[32m+[m[32m        atualizar_carrinho()[m
+[32m+[m
+[32m+[m[32m    def finalizar_venda():[m
+[32m+[m[32m        if not carrinho:[m
+[32m+[m[32m            messagebox.showerror("Erro", "Carrinho vazio!")[m
+[32m+[m[32m            return[m
+[32m+[m[32m        db.salvar_venda(carrinho)[m
+[32m+[m[32m        carrinho.clear()[m
+[32m+[m[32m        atualizar_carrinho()[m
+[32m+[m[32m        atualizar_lista_produtos_venda()[m
+[32m+[m[32m        messagebox.showinfo("Sucesso", "Venda finalizada!")[m
+[32m+[m
+[32m+[m[32m    tk.Button(janela_vendas, text="Adicionar ao Carrinho", command=adicionar_ao_carrinho).pack(pady=5)[m
+[32m+[m[32m    tk.Button(janela_vendas, text="Remover do Carrinho", command=remover_do_carrinho).pack(pady=5)[m
+[32m+[m[32m    tk.Button(janela_vendas, text="Finalizar Venda", command=finalizar_venda).pack(pady=5)[m

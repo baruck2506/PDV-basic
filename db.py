@@ -35,6 +35,34 @@ def criar_tabelas():
     """)
     conn.commit()
 
+# db.py (adição)
+def criar_tabela_usuarios():
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        senha TEXT,
+        tipo TEXT
+    )
+    """)
+    conn.commit()
+
+def adicionar_usuario(username, senha, tipo):
+    try:
+        cursor.execute("INSERT INTO usuarios (username, senha, tipo) VALUES (?, ?, ?)", (username, senha, tipo))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+def autenticar_usuario(username, senha):
+    cursor.execute("SELECT tipo FROM usuarios WHERE username=? AND senha=?", (username, senha))
+    resultado = cursor.fetchone()
+    if resultado:
+        return resultado[0]  # retorna 'admin' ou 'funcionario'
+    return None
+
+
 # ================= Funções de Produtos =================
 def adicionar_produto(nome, preco, estoque):
     try:
@@ -83,3 +111,8 @@ def salvar_venda(carrinho):
 def atualizar_estoque(nome, nova_quantidade):
     cursor.execute("UPDATE produtos SET estoque=? WHERE nome=?", (nova_quantidade, nome))
     conn.commit()
+
+def fechar_conexao():
+    conn.close()
+
+    
