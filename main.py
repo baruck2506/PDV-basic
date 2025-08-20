@@ -10,8 +10,8 @@ db.criar_tabelas()
 db.criar_tabela_usuarios()  # garante que a tabela de usuários exista
 
 # Usuários de teste
-db.adicionar_usuario("admin", "1234", "admin")
-db.adicionar_usuario("proprietario", "12345", "proprietario")
+db.adicionar_usuario("adm", "1234", "admin")
+db.adicionar_usuario("admin", "12345", "proprietario")
 db.adicionar_usuario("funcionario", "1234", "funcionario")
 
 
@@ -20,6 +20,11 @@ def abrir_sistema(tipo_usuario):
     root_frame = tk.Toplevel()
     root_frame.title("PDV Inteligente")
 
+    def logout():
+        root_frame.destroy()
+        login_ui.abrir_login(root, abrir_sistema)
+
+
     
     if tipo_usuario == "proprietario":
         tk.Button(root_frame, text="Gerenciar Usuários", width=30, command=usuarios_ui.abrir_janela_usuarios).pack(pady=10)
@@ -27,7 +32,7 @@ def abrir_sistema(tipo_usuario):
 
 
     
-
+    tk.Button(root_frame, text="Sair / Logout", width=30, command=logout).pack(pady=10)
 
     # Fechar tudo corretamente quando fechar a janela do sistema
     def fechar_janela():

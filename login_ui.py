@@ -30,6 +30,7 @@ def abrir_login(root, on_success):
     def sair_app():
         db.fechar_conexao()
         login_janela.destroy()
+        root.destroy()
 
     login_janela.protocol("WM_DELETE_WINDOW", sair_app)
 
