@@ -11,6 +11,7 @@ db.criar_tabela_usuarios()  # garante que a tabela de usuários exista
 
 # Usuários de teste
 db.adicionar_usuario("admin", "1234", "admin")
+db.adicionar_usuario("proprietario", "12345", "proprietario")
 db.adicionar_usuario("funcionario", "1234", "funcionario")
 
 
@@ -19,13 +20,14 @@ def abrir_sistema(tipo_usuario):
     root_frame = tk.Toplevel()
     root_frame.title("PDV Inteligente")
 
-    if tipo_usuario == "admin":
-        # Administrador pode gerenciar produtos e usuários
-        tk.Button(root_frame, text="Gerenciar Produtos", width=30, command=produtos_ui.abrir_janela_produtos).pack(pady=10)
+    
+    if tipo_usuario == "proprietario":
         tk.Button(root_frame, text="Gerenciar Usuários", width=30, command=usuarios_ui.abrir_janela_usuarios).pack(pady=10)
+        tk.Button(root_frame, text="Gerenciar Produtos", width=30, command=produtos_ui.abrir_janela_produtos).pack(pady=10)
 
-    # Todos os usuários (funcionários ou admins) podem abrir o PDV
-    tk.Button(root_frame, text="Abrir PDV (Vendas)", width=30, command=vendas_ui.abrir_janela_vendas).pack(pady=10)
+
+    
+
 
     # Fechar tudo corretamente quando fechar a janela do sistema
     def fechar_janela():
