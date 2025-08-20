@@ -2,17 +2,27 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 import db
+import cupom
+from datetime import datetime
 
 carrinho = {}
 
-def abrir_janela_vendas():
+def abrir_janela_vendas(funcionario):
     janela_vendas = tk.Toplevel()
-    janela_vendas.title("Vendas")
+    janela_vendas.title("PDV - Vendas")
 
     tk.Label(janela_vendas, text="Produtos Disponíveis").pack()
     list_produtos_venda = tk.Listbox(janela_vendas, width=50)
-    list_produtos_venda.pack()
+    list_produtos_venda.pack(pady=5)
 
+    tk.Label(janela_vendas, text="Carrinho").pack()
+    list_carrinho_venda = tk.Listbox(janela_vendas, width=50)
+    list_carrinho_venda.pack(pady=5)
+
+    label_total = tk.Label(janela_vendas, text="Total: R$ 0.00", font=("Arial", 14))
+    label_total.pack(pady=5)
+
+    # Funções de atualização
     def atualizar_lista_produtos_venda():
         list_produtos_venda.delete(0, tk.END)
         for _, nome, preco, estoque in db.listar_produtos():
@@ -20,24 +30,17 @@ def abrir_janela_vendas():
 
     atualizar_lista_produtos_venda()
 
-    tk.Label(janela_vendas, text="Carrinho").pack()
-    list_carrinho_venda = tk.Listbox(janela_vendas, width=50)
-    list_carrinho_venda.pack()
-
-    label_total = tk.Label(janela_vendas, text="Total: R$ 0.00", font=("Arial", 14))
-    label_total.pack(pady=5)
-
     def atualizar_carrinho():
         list_carrinho_venda.delete(0, tk.END)
         total = 0
         for nome, qtd in carrinho.items():
-            produto = next(p for p in db.listar_produtos() if p[1] == nome)
-            preco = produto[2]
+            preco = db.obter_preco_produto(nome)
             subtotal = preco * qtd
             list_carrinho_venda.insert(tk.END, f"{nome} x{qtd} - R$ {subtotal:.2f}")
             total += subtotal
         label_total.config(text=f"Total: R$ {total:.2f}")
 
+    # Funções do carrinho
     def adicionar_ao_carrinho():
         selecao = list_produtos_venda.curselection()
         if not selecao:
@@ -83,12 +86,19 @@ def abrir_janela_vendas():
         if not carrinho:
             messagebox.showerror("Erro", "Carrinho vazio!")
             return
-        db.salvar_venda(carrinho)
+
+        # Salvar venda no banco
+        db.salvar_venda(carrinho, funcionario=funcionario)
+
+        # Gerar cupom fiscal
+        arquivo_cupom = cupom.gerar_cupom(carrinho, funcionario)
+        messagebox.showinfo("Venda Finalizada", f"Venda registrada!\nCupom gerado: {arquivo_cupom}")
+
         carrinho.clear()
         atualizar_carrinho()
         atualizar_lista_produtos_venda()
-        messagebox.showinfo("Sucesso", "Venda finalizada!")
 
+    # Botões
     tk.Button(janela_vendas, text="Adicionar ao Carrinho", command=adicionar_ao_carrinho).pack(pady=5)
     tk.Button(janela_vendas, text="Remover do Carrinho", command=remover_do_carrinho).pack(pady=5)
     tk.Button(janela_vendas, text="Finalizar Venda", command=finalizar_venda).pack(pady=5)
