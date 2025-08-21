@@ -6,10 +6,20 @@ import db
 def abrir_janela_empresa():
     janela = tk.Toplevel()
     janela.title("Configuração da Empresa")
-    janela.geometry("400x300")
-    janela.grab_set()  # torna a janela modal
+    janela.geometry("420x320")
+    janela.grab_set()  # janela modal
 
-    # Labels e Entrys
+    # ===== Menubar com atalho =====
+    menubar = tk.Menu(janela)
+    menu_arquivo = tk.Menu(menubar, tearoff=0)
+    # o comando será ligado depois que salvar() existir
+    menubar.add_cascade(label="Arquivo", menu=menu_arquivo)
+    janela.config(menu=menubar)
+
+    # ===== Campos =====
+    lbl_hint = tk.Label(janela, text="Dica: use Ctrl+S para salvar", fg="gray")
+    lbl_hint.pack(anchor="w", padx=10, pady=(8, 0))
+
     tk.Label(janela, text="Nome da Empresa").pack(anchor="w", padx=10, pady=(10, 0))
     entry_nome = tk.Entry(janela, width=50)
     entry_nome.pack(padx=10, pady=2)
@@ -35,8 +45,8 @@ def abrir_janela_empresa():
         entry_endereco.insert(0, endereco)
         entry_telefone.insert(0, telefone)
 
-    # Função de salvar
-    def salvar():
+    # ===== Função salvar (aceita evento do atalho) =====
+    def salvar(event=None):
         nome = entry_nome.get().strip()
         cnpj = entry_cnpj.get().strip()
         endereco = entry_endereco.get().strip()
@@ -44,17 +54,23 @@ def abrir_janela_empresa():
 
         if not nome or not cnpj or not endereco or not telefone:
             messagebox.showerror("Erro", "Preencha todos os campos!")
-            return
+            return "break"  # evita beep em alguns sistemas
 
         db.salvar_empresa(nome, cnpj, endereco, telefone)
         messagebox.showinfo("Sucesso", "Dados da empresa salvos!")
+        return "break"
 
-    # Frame para garantir que o botão apareça embaixo
-    frame_botoes = tk.Frame(janela)
-    frame_botoes.pack(fill="x", pady=15)
+    # Conectar item de menu ao salvar
+    menu_arquivo.add_command(label="Salvar    Ctrl+S", command=salvar)
 
-    btn_salvar = tk.Button(frame_botoes, text="Salvar", width=15, command=salvar)
-    btn_salvar.pack(pady=5)
+    # ===== Atalhos de teclado =====
+    janela.bind("<Control-s>", salvar)   # Ctrl+S salva
+    janela.bind("<Return>", salvar)      # Enter salva (se quiser, remova esta linha)
+    # Opcional: fechar com Esc
+    janela.bind("<Escape>", lambda e: janela.destroy())
 
-    # Força atualização da interface (evita sumir no exe)
+    # Foco inicial
+    entry_nome.focus_set()
+
+    # Forçar desenho (às vezes ajuda no .exe)
     janela.update_idletasks()
