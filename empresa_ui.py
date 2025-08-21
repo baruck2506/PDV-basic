@@ -6,25 +6,25 @@ import db
 def abrir_janela_empresa():
     janela = tk.Toplevel()
     janela.title("Configuração da Empresa")
-    janela.geometry("400x250")
+    janela.geometry("400x300")
     janela.grab_set()  # torna a janela modal
 
     # Labels e Entrys
     tk.Label(janela, text="Nome da Empresa").pack(anchor="w", padx=10, pady=(10, 0))
     entry_nome = tk.Entry(janela, width=50)
-    entry_nome.pack(padx=10)
+    entry_nome.pack(padx=10, pady=2)
 
     tk.Label(janela, text="CNPJ").pack(anchor="w", padx=10, pady=(10, 0))
     entry_cnpj = tk.Entry(janela, width=50)
-    entry_cnpj.pack(padx=10)
+    entry_cnpj.pack(padx=10, pady=2)
 
     tk.Label(janela, text="Endereço").pack(anchor="w", padx=10, pady=(10, 0))
     entry_endereco = tk.Entry(janela, width=50)
-    entry_endereco.pack(padx=10)
+    entry_endereco.pack(padx=10, pady=2)
 
     tk.Label(janela, text="Telefone").pack(anchor="w", padx=10, pady=(10, 0))
     entry_telefone = tk.Entry(janela, width=50)
-    entry_telefone.pack(padx=10)
+    entry_telefone.pack(padx=10, pady=2)
 
     # Carregar dados existentes
     empresa = db.carregar_empresa()
@@ -49,5 +49,12 @@ def abrir_janela_empresa():
         db.salvar_empresa(nome, cnpj, endereco, telefone)
         messagebox.showinfo("Sucesso", "Dados da empresa salvos!")
 
-    # Botão Salvar
-    tk.Button(janela, text="Salvar", width=15, command=salvar).pack(pady=15)
+    # Frame para garantir que o botão apareça embaixo
+    frame_botoes = tk.Frame(janela)
+    frame_botoes.pack(fill="x", pady=15)
+
+    btn_salvar = tk.Button(frame_botoes, text="Salvar", width=15, command=salvar)
+    btn_salvar.pack(pady=5)
+
+    # Força atualização da interface (evita sumir no exe)
+    janela.update_idletasks()
